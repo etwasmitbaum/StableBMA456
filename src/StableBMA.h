@@ -41,7 +41,8 @@
 #include <stdlib.h>
 #endif
 
-#include "bma423.h"
+#include "bma456w.h"
+#include <Wire.h>
 
 #ifndef WATCHY_H
 enum {
@@ -63,6 +64,12 @@ enum {
 typedef struct bma4_accel Accel;
 typedef struct bma4_accel_config Acfg;
 
+static void bma4xx_hal_delay_usec(uint32_t period_us, void *intf_ptr);
+static int8_t bma4xx_hal_i2c_bus_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr);
+static int8_t bmi4xx_hal_i2c_bus_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr);
+int8_t BMA456_read_i2c(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint16_t count);
+int8_t BMA456_write_i2c(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint16_t count);
+
 class StableBMA
 {
 
@@ -70,8 +77,7 @@ public:
     StableBMA();
     ~StableBMA();
 
-    bool begin(bma4_com_fptr_t readCallBlack, bma4_com_fptr_t writeCallBlack, bma4_delay_fptr_t delayCallBlack, uint8_t RTCType,
-               uint8_t address = BMA4_I2C_ADDR_PRIMARY);  // Same as original but requires an RTCType from WatchyRTC or SmallRTC.
+    bool begin(uint8_t RTCType, uint8_t address = BMA4_I2C_ADDR_PRIMARY);  // Same as original but requires an RTCType from WatchyRTC or SmallRTC.
 
     void softReset();  // Same as original.
     void shutDown();   // Same as original.
@@ -91,8 +97,8 @@ public:
     bool setINTPinConfig(struct bma4_int_pin_config config, uint8_t pinMap);  // Same as original.
     bool getINT();  // Same as original.
     uint8_t getIRQMASK();  // Same as original.
-    bool disableIRQ(uint16_t int_map = BMA423_STEP_CNTR_INT);  // Same as original.
-    bool enableIRQ(uint16_t int_map = BMA423_STEP_CNTR_INT);   // Same as original.
+    bool disableIRQ(uint16_t int_map = BMA456W_STEP_CNTR_INT);  // Same as original.
+    bool enableIRQ(uint16_t int_map = BMA456W_STEP_CNTR_INT);   // Same as original.
     bool isStepCounter();  // Same as original.
     bool isDoubleClick(); // Same as original.  Can be used AFTER didBMAWakeUp(wakeupBit) to determine if this is true or not.
     bool isTilt();        // Same as original.  Can be used AFTER didBMAWakeUp(wakeupBit) to determine if this is true or not.
@@ -111,7 +117,7 @@ public:
     uint32_t getSensorTime(); // Same as original.
 
     const char *getActivity(); // Same as original.
-    bool setRemapAxes(struct bma423_axes_remap *remap_data); // Same as original.
+    bool setRemapAxes(struct bma4_remap *remap_data); // Same as original.
 
     bool enableFeature(uint8_t feature, uint8_t enable ); // Same as original.
     bool enableStepCountInterrupt(bool en = true);        // Same as original.
@@ -124,14 +130,13 @@ public:
     bool enableDoubleClickWake(bool en = true); // Enables/Disables DoubleClick and the Wake Interrupt
     bool enableTiltWake(bool en = true);        // Enables/Disables Tilt and the Wake Interrupt
 
-private:
-    bma4_com_fptr_t __readRegisterFptr;
-    bma4_com_fptr_t __writeRegisterFptr;
-    bma4_delay_fptr_t __delayCallBlackFptr;
+    static float lsb_to_ms2(int16_t val, float g_range, uint8_t bit_width);
+    int8_t bma4_interface_selection(struct bma4_dev *bma);
 
+private:
     uint8_t __address;
     uint8_t __RTCTYPE;
     uint16_t __IRQ_MASK;
     bool __init;
-    struct bma4_dev __devFptr;
+    struct bma4_dev bma;
 };
