@@ -46,10 +46,10 @@
 
 #ifndef WATCHY_H
 enum {
-    DIRECTION_TOP_EDGE        = 0,
-    DIRECTION_BOTTOM_EDGE     = 1,
-    DIRECTION_LEFT_EDGE       = 2,
-    DIRECTION_RIGHT_EDGE      = 3,
+    DIRECTION_TOP_EDGE_UP     = 0,
+    DIRECTION_BOTTOM_EDGE_UP  = 1,
+    DIRECTION_LEFT_EDGE_UP    = 2,
+    DIRECTION_RIGHT_EDGE_UP   = 3,
     DIRECTION_DISP_UP         = 4,
     DIRECTION_DISP_DOWN       = 5
 } ;
@@ -106,6 +106,7 @@ public:
     bool isAnyNoMotion(); // Same as original.  Can be used AFTER didBMAWakeUp(wakeupBit) to determine if this is true or not.
     bool didBMAWakeUp(uint64_t hwWakeup); // Allows you to tell via wakeupBit, if the BMA woke the Watchy, if it did, it reads the reason so you can use the above 4 functions.
 
+    bool stepCounterWatermark(uint16_t level);
     bool resetStepCounter();  // Same as original.
     uint32_t getCounter();    // Same as original.
 
@@ -131,7 +132,7 @@ public:
     bool enableTiltWake(bool en = true);        // Enables/Disables Tilt and the Wake Interrupt
 
     static float lsb_to_ms2(int16_t val, float g_range, uint8_t bit_width);
-    int8_t bma4_interface_selection(struct bma4_dev *bma);
+    int8_t bma4_interface_i2c_init(struct bma4_dev *bma);
 
 private:
     uint8_t __address;
