@@ -68,13 +68,13 @@ bool StableBMA::begin(uint8_t RTCType, uint8_t address)
         return false;
     }
 
-    softReset();
-
     if (bma456w_init(&bma) != BMA4_OK)
     {
         DEBUG("BMA456 INIT FAIL\n");
         return false;
     }
+
+    softReset();
     
     if (bma456w_write_config_file(&bma) != BMA4_OK)
     {
@@ -284,7 +284,14 @@ bool StableBMA::enableFeature(uint8_t feature, uint8_t enable)
 {
     if ((feature & BMA456W_STEP_CNTR) == BMA456W_STEP_CNTR)
     {
-        bma456w_step_detector_enable(enable ? BMA4_ENABLE : BMA4_DISABLE, &bma);
+        //bma456w_step_detector_enable(enable ? BMA4_ENABLE : BMA4_DISABLE, &bma);
+        int8_t success = bma4_set_accel_enable(BMA4_ENABLE, &bma) == BMA4_OK;
+        if (success)
+            success = bma456w_feature_enable(BMA456W_STEP_CNTR, BMA4_ENABLE, &bma) == BMA4_OK;
+        if (success)
+            success = bma456w_map_interrupt(BMA4_INTR1_MAP, BMA456W_STEP_CNTR_INT, BMA4_ENABLE, &bma) == BMA4_OK;
+        return success;
+    
     }
     return (BMA4_OK == bma456w_feature_enable(feature, enable, &bma));
 }
@@ -534,7 +541,6 @@ int8_t StableBMA::bma4_interface_i2c_init(struct bma4_dev *bma)
     {
 
         /* Bus configuration : I2C */
-        Wire.begin();
         __address = BMA4_I2C_ADDR_PRIMARY;
         bma->intf = BMA4_I2C_INTF;
         bma->bus_read = bma4xx_hal_i2c_bus_read;
